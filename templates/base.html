@@ -4,20 +4,22 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
     <title>{% block title %}{{ escape(handler.settings["blog_title"]) }}{% end %}</title>
     <link rel="stylesheet" href="/static/blog.css" type="text/css"/>
-    <link rel="alternate" href="http://feeds.feedburner.com/brettaylor" type="application/atom+xml" title="{{ escape(handler.settings["blog_title"]) }}"/>
+    <link rel="stylesheet" href="/static/pygments.css" type="text/css"/>
+    <link rel="alternate" href="http://feeds.feedburner.com/kkszysiu/blog" type="application/atom+xml" title="{{ escape(handler.settings["blog_title"]) }}"/>
     {% block head %}{% end %}
   </head>
   <body>
     <div id="body">
       <div id="header">
-	<div class="menu"><span><a href="http://feeds.feedburner.com/brettaylor"><img src="/static/images/rss.png" style="width:30px" alt="Feed"/></a></span><span><a href="/archive"><img src="/static/images/archive.png" style="width:57px" alt="Archive"/></a></span><span><a href="/about"><img src="/static/images/about-me.png" style="width:69px" alt="About me"/></a></span></div>
-	<div class="title"><a href="/"><img src="/static/images/bret-taylor.png" style="width:116px" alt="Bret Taylor"/></a></div>
+		<div class="menu">
+		  {% if current_user and current_user.administrator %}<span><a href="/compose">Nowy wpis</a></span>{% end %}
+		  <span><a href="http://feeds.feedburner.com/kkszysiu/blog">Atom</a></span>
+		  <span><a href="/archive">Archiwum</a></span>
+		  <span><a href="/about">O mnie</a></span>
+		</div>
+		<div class="title"><a href="/">Krzysztof Klinikowski</a> - Code is poetry…</div>
       </div>
       <div id="content">{% block body %}{% end %}</div>
-      <div id="footer">
-	&copy;{{ datetime.datetime.utcnow().year }} Bret Taylor - <a href="/about">About me</a> - <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons license</a>
-	{% if current_user %} - <a href="{{ users.create_logout_url(request.uri) }}">Sign out</a>{% end %}
-      </div>
     </div>
     {% block bottom %}{% end %}
     {% if not handler.settings.get("debug") %}
@@ -28,7 +30,7 @@
       //<![CDATA[
 
 	try {
-	  var pageTracker = _gat._getTracker("UA-50599-9");
+	  var pageTracker = _gat._getTracker("UA-10562024-2");
 	  pageTracker._trackPageview();
 	} catch(e) {}
 

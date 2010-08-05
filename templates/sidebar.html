@@ -3,19 +3,42 @@
 {% block body %}
   {% block sidebar %}
     <div id="sidebar">
-      <div class="section">
-	<div class="headline"><img src="/static/images/find-me-on-the-web.png" style="width:139px" alt="Find me on the web"/></div>
-	<table class="icons">
-	  <tr>
-	    <td><a href="http://www.facebook.com/btaylor" rel="me"><img src="/static/images/facebook-big.png"/></a></td>
-	    <td class="last"><a href="mailto:btaylor@gmail.com" rel="me"><img src="/static/images/gmail-big.png"/></a></td>
-	  </tr>
-	  <tr>
-	    <td><a href="http://feeds.feedburner.com/brettaylor" rel="me"><img src="/static/images/feed-big.png"/></a></td>
-	    <td class="last"><a href="http://friendfeed.com/bret" rel="me"><img src="/static/images/friendfeed-big.png"/></a></td>
-	  </tr>
-	</table>
-      </div>
+	
+	<div class="sideitem">
+	    <div style="padding:0; margin: 0; text-align:center;">
+            <object width="250" height="350"><param name="movie" value="http://blip.pl/widget.swf" /><param name="wmode" value="transparent" /><param name="flashvars" value="blip_user=kkszysiu&amp;color_scheme=bw&amp;corner_radius=0&amp;"><embed src="http://blip.pl/widget.swf" wmode="transparent" width="250" height="350" flashvars="blip_user=kkszysiu&amp;color_scheme=bw&amp;corner_radius=0&amp;" type="application/x-shockwave-flash" /></object>
+        </div>
+	</div>
+	
+	
+	
+	{% if ptags %}
+	<div class="sideitem">
+	    <h3>Popularne Tagi</h3>
+	    <ul>
+	    {% for tag in ptags %}
+	        <li><a href="/tag/{{ tag.tag }}">{{ tag.tag }}</a></li>
+	    {% end %}
+	    </ul>
+	</div>
+	{% end %}
+	
+	<div class="sideitem">
+	    <h3>Proudly powered by:</h3>
+	    <div style="padding:0; margin: 0; text-align:center;">
+        	<div style="padding: 10px;"><a href="http://www.tornadoweb.org/"><img src="/static/images/tornado.png" title="TornadoWeb"/></a></div>
+	        <div style="padding: 10px;"><a href="http://code.google.com/intl/pl/appengine/"><img src="/static/images/googleappengine.png" title="Google App Engine"/></a></div>
+	        <div style="padding: 10px;"><strong>CSS3</strong>, <strong>(X)HTML</strong>, <strong>JS</strong> &amp; <strong>Me</strong></div>
+	    </div>
+	</div>
+	
+	<div class="sideitem">
+        <p style="text-align:center;">&copy;{{ datetime.datetime.utcnow().year }} Krzysztof Klinikowski<br/><a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons license</a><br/>
+        Where children sing songs of binary bliss.
+        {% if current_user %}<br/><a href="{{ users.create_logout_url(request.uri) }}">Wyloguj</a>{% end %}
+        </p>
+    </div>
+	
     </div>
   {% end %}
   <div id="entries">{% block content %}{% end %}</div>

@@ -15,7 +15,6 @@
 # under the License.
 
 import functools
-import markdown
 import os
 import os.path
 import re
@@ -27,8 +26,18 @@ import wsgiref.handlers
 from google.appengine.api import users
 from google.appengine.ext import db
 
+from taggable import Tag, Taggable
+from paging import PagedQuery
 
-class Entry(db.Model):
+#Pygments
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
+
+tornado.locale.set_default_locale('pl_PL')
+
+
+class Entry(Taggable, db.Model):
     """A single blog entry."""
     author = db.UserProperty()
     title = db.StringProperty(required=True)
@@ -38,6 +47,9 @@ class Entry(db.Model):
     published = db.DateTimeProperty(auto_now_add=True)
     updated = db.DateTimeProperty(auto_now=True)
 
+    def __init__(self, parent=None, key_name=None, app=None, **entity_values):
+        db.Model.__init__(self, parent, key_name, app, **entity_values)
+        Taggable.__init__(self)
 
 def administrator(method):
     """Decorate with this method to restrict to site admins."""
@@ -76,20 +88,37 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class HomeHandler(BaseHandler):
     def get(self):
-        entries = db.Query(Entry).order('-published').fetch(limit=3)
+        page = self.get_argument("page", None)
+        if page == None:
+            page = 1
+        #entries = db.Query(Entry).order('-published').fetch(limit=20)
+        pagedquery = PagedQuery(Entry.all(), 10)
+        pagedquery.order('-published')
+        last_page = pagedquery.page_count()
+        entries = pagedquery.fetch_page(page)
+        ptags = Tag.popular_tags(limit=10)
         if not entries:
             if not self.current_user or self.current_user.administrator:
                 self.redirect("/compose")
                 return
-        self.render("home.html", entries=entries)
+        self.render("home.html", entries=entries, ptags=ptags, page=page, last_page=last_page)
 
 
 class EntryHandler(BaseHandler):
     @tornado.web.removeslash
     def get(self, slug):
         entry = db.Query(Entry).filter("slug =", slug).get()
+        ptags = Tag.popular_tags(limit=10)
         if not entry: raise tornado.web.HTTPError(404)
-        self.render("entry.html", entry=entry)
+        self.render("entry.html", entry=entry, ptags=ptags)
+
+
+class TagListHandler(BaseHandler):
+    @tornado.web.removeslash
+    def get(self, name):
+        tag = Tag.get_by_name(name)
+        entries = Entry.all().filter("__key__ IN", tag.tagged)
+        self.render("taglist.html", name=name, entries=entries)
 
 
 class ArchiveHandler(BaseHandler):
@@ -100,7 +129,8 @@ class ArchiveHandler(BaseHandler):
 
 class AboutHandler(BaseHandler):
     def get(self):
-        self.render("about.html")
+        ptags = Tag.popular_tags(limit=10)
+        self.render("about.html", ptags=ptags)
 
 
 class FeedHandler(BaseHandler):
@@ -109,6 +139,14 @@ class FeedHandler(BaseHandler):
         self.set_header("Content-Type", "application/atom+xml")
         self.render("feed.xml", entries=entries)
 
+class DeleteHandler(BaseHandler):
+    @administrator
+    def get(self):
+        key = self.get_argument("key", None)
+        entry = Entry.get(key) if key else None
+        if entry != None:
+            entry.delete()
+            self.redirect("/")
 
 class ComposeHandler(BaseHandler):
     @administrator
@@ -123,8 +161,11 @@ class ComposeHandler(BaseHandler):
         if key:
             entry = Entry.get(key)
             entry.title = self.get_argument("title")
-            entry.body = self.get_argument("markdown")
-            entry.markdown = markdown.markdown(self.get_argument("markdown"))
+            entry.body = self.get_argument("content")
+            entry.markdown = self.get_argument("content")
+            entry.put()
+            entry.tags = self.get_argument("tags", "")
+            self.redirect("/entry/" + entry.slug)
         else:
             title = self.get_argument("title")
             slug = unicodedata.normalize("NFKD", title).encode(
@@ -138,15 +179,27 @@ class ComposeHandler(BaseHandler):
                     break
                 slug += "-2"
             entry = Entry(
-                author=self.current_user,
-                title=title,
-                slug=slug,
-                body=self.get_argument("markdown"),
-                markdown=markdown.markdown(self.get_argument("markdown")),
+                author = self.current_user,
+                title = title,
+                slug = slug,
+                body = self.get_argument("content"),
+                markdown = self.get_argument("content")
             )
-        entry.put()
-        self.redirect("/entry/" + entry.slug)
+            entry.put()
+            entry.tags = self.get_argument("tags", "")
+            self.redirect("/entry/" + entry.slug)
 
+class PygmentsHandler(BaseHandler):
+    @administrator
+    def get(self):
+        self.render("tinymce/pygments.html")
+
+    @administrator
+    def post(self):
+        lang = self.get_argument("lang", "python")
+        code = self.get_argument("code", "")
+        code = highlight(code, get_lexer_by_name(lang), HtmlFormatter(style='colorful', cssclass="pygments"))
+        return self.write(code)
 
 class EntryModule(tornado.web.UIModule):
     def render(self, entry, show_comments=False):
@@ -164,23 +217,27 @@ class EntryModule(tornado.web.UIModule):
 
     def javascript_files(self):
         if getattr(self, "show_comments", False):
-            return ["http://disqus.com/forums/brettaylor/embed.js"]
+            return ["http://disqus.com/forums/kkszysiublog/embed.js"]
         return None
 
 
 settings = {
-    "blog_title": u"Bret Taylor's blog",
+    "blog_title": u"Krzysztof Klinikowski Blog",
     "template_path": os.path.join(os.path.dirname(__file__), "templates"),
     "ui_modules": {"Entry": EntryModule},
     "xsrf_cookies": True,
-    "debug": os.environ.get("SERVER_SOFTWARE", "").startswith("Development/"),
+    "debug": os.environ.get("SERVER_SOFTWARE", "").startswith("Development/")
 }
+
 application = tornado.wsgi.WSGIApplication([
     (r"/", HomeHandler),
     (r"/archive", ArchiveHandler),
     (r"/feed", FeedHandler),
     (r"/entry/([^/]+)/?", EntryHandler),
+    (r"/tag/([^/]+)/?", TagListHandler),
     (r"/compose", ComposeHandler),
+    (r"/pygments", PygmentsHandler),
+    (r"/delete", DeleteHandler),
     (r"/about", AboutHandler),
     (r"/index", tornado.web.RedirectHandler, {"url": "/archive"}),
 ], **settings)

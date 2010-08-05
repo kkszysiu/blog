@@ -4,5 +4,10 @@
   {% for entry in entries %}
     {{ modules.Entry(entry) }}
   {% end %}
-  <div><a href="/archive">{{ _("Archive") }}</a></div>
+  
+  <div id="pagination" style="letter-spacing: -0.08em; line-height: 0.8; width: 100%;">
+    {% if page != 1 %}<a href="" style="float: left;">« poprzednia strona</a>{% end %}    {% if page != last_page %}<a href="" style="float: right;">następna strona »</a>{% end %}
+  </div>
+  <div style="clear:both;"/>
+  
 {% end %}

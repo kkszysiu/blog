@@ -1,17 +1,25 @@
 <div class="entry">
   <h1><a href="/entry/{{ entry.slug }}">{{ escape(entry.title) }}</a></h1>
-  <div class="date">By Bret Taylor &middot; {{ locale.format_date(entry.published, full_format=True, shorter=True) }}</div>
-  <div class="body">{{ entry.markdown }}</div>
+  <div class="date">By Krzysztof Klinikowski &middot; {{ locale.format_date(entry.published, full_format=True, shorter=True) }}</div>
+  {% if entry.tags %}
+  <div class="date">
+    {{ _("Tagi") }}:
+        {% for each_tag in entry.tags %}
+            <a href="/tag/{{ escape(each_tag.tag) }}">{{ each_tag.tag }}</a>
+        {% end %}
+  </div>
+  {% end %}
+  <div class="body">{{ entry.body }}</div>
   {% if not show_comments %}
     <div class="footer">
-      <a href="/entry/{{ entry.slug }}#disqus_thread">Comments</a>
+      <a href="/entry/{{ entry.slug }}#disqus_thread">Komentarze</a>
+	  {% if current_user and current_user.administrator %}
+      <a href="/compose?key={{ str(entry.key()) }}">{{ _("Edytuj wpis") }}</a>
+      <a href="/delete?key={{ str(entry.key()) }}">{{ _("Usuń") }}</a>
+	  {% end %}
     </div>
   {% end %}
-  {% if current_user and current_user.administrator %}
-    <div class="footer">
-      <a href="/compose?key={{ str(entry.key()) }}">{{ _("Edit this post") }}</a>
-    </div>
-  {% end %}
+
   {% if show_comments %}
     <div id="disqus_thread"></div>
   {% end %}

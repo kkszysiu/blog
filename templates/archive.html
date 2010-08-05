@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ escape(handler.settings["blog_title"]) }} - Archive{% end %}
+{% block title %}{{ escape(handler.settings["blog_title"]) }} - Archiwum{% end %}
 
 {% block head %}
   <style type="text/css">
@@ -22,6 +22,7 @@
 {% end %}
 
 {% block body %}
+<div id="entries">
   <ul class="archive">
     {% for entry in entries %}
       <li>
@@ -30,4 +31,5 @@
       </li>
     {% end %}
   </ul>
+</div>
 {% end %}
